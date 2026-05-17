@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vision & Words — Your AI Image Companion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #fdfaf6;
+      --card-bg: #ffffff;
+      --primary: #7c9070; /* Sage Green */
+      --primary-hover: #6a7d5f;
+      --text-main: #4a4a4a;
+      --text-light: #8c8c8c;
+      --accent: #d9a081; /* Soft Terracotta */
+      --error: #c97070;
+      --shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+      --border-radius: 24px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Quicksand', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 600px;
+      width: 100%;
+      text-align: center;
+      animation: fadeIn 0.8s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      font-family: 'Lora', serif;
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: var(--text-light);
+      margin-bottom: 40px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      padding: 40px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(0,0,0,0.02);
+      transition: transform 0.3s ease;
+    }
+
+    /* Upload Area */
+    .upload-section {
+      position: relative;
+      border: 2px dashed #e0e0e0;
+      border-radius: var(--border-radius);
+      padding: 60px 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: #fafafa;
+    }
+
+    .upload-section:hover {
+      border-color: var(--primary);
+      background: #f4f7f2;
+    }
+
+    .upload-section.dragover {
+      border-color: var(--primary);
+      background: #f4f7f2;
+      transform: scale(1.02);
+    }
+
+    .upload-section input[type="file"] {
+      position: absolute; inset: 0;
+      opacity: 0; cursor: pointer;
+      width: 100%; height: 100%;
+    }
+
+    .icon-wrapper {
+      font-size: 48px;
+      margin-bottom: 15px;
+      display: inline-block;
+      transition: transform 0.3s ease;
+    }
+
+    .upload-section:hover .icon-wrapper {
+      transform: translateY(-5px);
+    }
+
+    .upload-section p {
+      font-weight: 500;
+      color: #666;
+    }
+
+    .upload-section span {
+      font-size: 0.9rem;
+      color: var(--text-light);
+    }
+
+    /* Preview State */
+    #preview-container {
+      display: none;
+      margin-bottom: 30px;
+    }
+
+    #image-preview {
+      width: 100%;
+      max-height: 400px;
+      object-fit: cover;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+
+    /* Buttons */
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: 14px 28px;
+      border-radius: 50px;
+      font-family: 'Quicksand', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: none;
+      outline: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 15px rgba(124, 144, 112, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(124, 144, 112, 0.4);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-light);
+      border: 1px solid #e0e0e0;
+    }
+
+    .btn-secondary:hover {
+      background: #f5f5f5;
+      color: var(--text-main);
+    }
+
+    .btn:disabled {
+      background: #d0d0d0;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    /* Results */
+    #result-area {
+      display: none;
+      margin-top: 30px;
+      padding: 24px;
+      background: #f9fbf8;
+      border-radius: 18px;
+      border-left: 4px solid var(--primary);
+      text-align: left;
+      animation: slideUp 0.5s ease-out;
+      position: relative;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: white;
+      border: 1px solid #eee;
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      color: var(--text-light);
+      transition: all 0.2s;
+      display: flex;
+      gap: 5px;
+    }
+
+    .download-btn {
+      position: absolute;
+      top: 15px;
+      right: 85px; /* Positioned next to copy button */
+      background: white;
+      border: 1px solid #eee;
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      color: var(--text-light);
+      transition: all 0.2s;
+    }
+
+    .download-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .copy-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* Style Selector */
+    .style-selector {
+      margin-bottom: 25px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+    }
+
+    .style-option {
+      cursor: pointer;
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      border: 1px solid #eee;
+      background: #fafafa;
+      transition: all 0.3s;
+    }
+
+    .style-option.active {
+      background: #f4f7f2;
+      border-color: var(--primary);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes successPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.02); box-shadow: 0 0 20px rgba(124, 144, 112, 0.2); }
+      100% { transform: scale(1); }
+    }
+
+    .pulse {
+      animation: successPulse 0.5s ease-out;
+    }
+
+    .result-label {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--primary);
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    #caption-text {
+      font-family: 'Lora', serif;
+      font-size: 1.3rem;
+      color: #333;
+      font-style: italic;
+    }
+
+    /* Loader */
+    .loader {
+      display: none;
+      width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-msg {
+      color: var(--error);
+      font-size: 0.9rem;
+      margin-top: 15px;
+      display: none;
+    }
+
+    footer {
+      margin-top: 50px;
+      font-size: 0.85rem;
+      color: var(--text-light);
+    }
+
+    /* Utility */
+    .flex-center { display: flex; align-items: center; justify-content: center; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Vision & Words</h1>
+  <p class="subtitle">I'll help you find the right words for your favorite moments.</p>
+
+  <div class="card">
+    <!-- Style Selector -->
+    <div class="style-selector">
+      <div class="style-option active" onclick="setStyle('casual', this)">Casual</div>
+      <div class="style-option" onclick="setStyle('detailed', this)">Detailed</div>
+      <div class="style-option" onclick="setStyle('creative', this)">Creative</div>
+    </div>
+
+    <!-- Initial State -->
+    <div id="upload-container">
+      <div class="upload-section" id="drop-zone">
+        <input type="file" id="file-input" accept="image/*" />
+        <div class="icon-wrapper">🌿</div>
+        <p>Pick a photo or drag it here</p>
+        <span>Supports JPG, PNG, and WEBP</span>
+      </div>
+    </div>
+
+    <!-- Preview State -->
+    <div id="preview-container">
+      <img id="image-preview" src="" alt="Your beautiful photo" />
+      <div class="btn-group">
+        <button class="btn btn-secondary" onclick="reset()">Choose another</button>
+        <button class="btn btn-primary flex-center" id="generate-btn" onclick="generateCaption()">
+          <div class="loader" id="loader"></div>
+          <span id="btn-text">Describe this for me</span>
+        </button>
+      </div>
+    </div>
+
+    <p class="error-msg" id="error-display"></p>
+
+    <!-- Result State -->
+    <div id="result-area">
+      <button class="download-btn" id="download-btn" onclick="downloadResult()">Download</button>
+      <button class="copy-btn" id="copy-btn" onclick="copyCaption()">Copy</button>
+      <span class="result-label">I see...</span>
+      <p id="caption-text"></p>
+    </div>
+  </div>
+
+  <footer>
+    Crafted with care by your AI companion
+  </footer>
+</div>
+
+<script>
+  const fileInput = document.getElementById('file-input');
+  const dropZone = document.getElementById('drop-zone');
+  const uploadContainer = document.getElementById('upload-container');
+  const previewContainer = document.getElementById('preview-container');
+  const imagePreview = document.getElementById('image-preview');
+  const resultArea = document.getElementById('result-area');
+  const captionText = document.getElementById('caption-text');
+  const generateBtn = document.getElementById('generate-btn');
+  const loader = document.getElementById('loader');
+  const btnText = document.getElementById('btn-text');
+  const errorDisplay = document.getElementById('error-display');
+
+  let currentStyle = 'casual';
+
+  function setStyle(style, el) {
+    currentStyle = style;
+    document.querySelectorAll('.style-option').forEach(opt => opt.classList.remove('active'));
+    el.classList.add('active');
+    // If we have a result, maybe auto-regenerate? 
+    // For now just set the style for the next generation
+  }
+
+  function copyCaption() {
+    const text = captionText.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const copyBtn = document.getElementById('copy-btn');
+      const originalText = copyBtn.textContent;
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => copyBtn.textContent = originalText, 2000);
+    });
+  }
+
+  function downloadResult() {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = imagePreview;
+    const text = captionText.textContent;
+
+    // Set canvas size (image size + space for text)
+    const padding = 60;
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight + 120;
+
+    // Draw background
+    ctx.fillStyle = '#fdfaf6';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw image
+    ctx.drawImage(img, 0, 0);
+
+    // Draw text
+    ctx.fillStyle = '#4a4a4a';
+    ctx.font = 'italic 40px Lora, serif';
+    ctx.textAlign = 'center';
+    
+    // Simple text wrapping
+    const maxWidth = canvas.width - 80;
+    const words = text.split(' ');
+    let line = '';
+    let y = img.naturalHeight + 60;
+
+    for(let n = 0; n < words.length; n++) {
+      let testLine = line + words[n] + ' ';
+      let metrics = ctx.measureText(testLine);
+      let testWidth = metrics.width;
+      if (testWidth > maxWidth && n > 0) {
+        ctx.fillText(line, canvas.width / 2, y);
+        line = words[n] + ' ';
+        y += 50;
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line, canvas.width / 2, y);
+
+    // Download
+    const link = document.createElement('a');
+    link.download = 'captioned-image.png';
+    link.href = canvas.toDataURL();
+    link.click();
+  }
+
+  // Handle Drag & Drop
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+  });
+
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    handleFiles(files);
+  });
+
+  fileInput.addEventListener('change', function() {
+    handleFiles(this.files);
+  });
+
+  // Handle Files
+  let currentFile = null;
+  function handleFiles(files) {
+    if (files.length === 0) return;
+    currentFile = files[0];
+    
+    if (!currentFile.type.startsWith('image/')) {
+      showError("Please pick an image file so I can see it clearly.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      imagePreview.src = e.target.result;
+      uploadContainer.style.display = 'none';
+      previewContainer.style.display = 'block';
+      resultArea.style.display = 'none';
+      errorDisplay.style.display = 'none';
+    };
+    reader.readAsDataURL(currentFile);
+  }
+
+  async function generateCaption() {
+    if (!currentFile) return;
+
+    setLoading(true);
+    errorDisplay.style.display = 'none';
+
+    const formData = new FormData();
+    formData.append('image', currentFile);
+    formData.append('style', currentStyle);
+
+    try {
+      const response = await fetch('/caption', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        captionText.textContent = data.caption;
+        resultArea.style.display = 'block';
+        // Add success pulse
+        const card = document.querySelector('.card');
+        card.classList.remove('pulse');
+        void card.offsetWidth; // Trigger reflow
+        card.classList.add('pulse');
+        
+        // Smooth scroll to result
+        resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } else {
+        showError(data.error || "I'm having a little trouble describing this. Maybe try another photo?");
+      }
+    } catch (err) {
+      showError("I can't seem to reach my brain right now. Is the server running?");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function reset() {
+    currentFile = null;
+    fileInput.value = '';
+    uploadContainer.style.display = 'block';
+    previewContainer.style.display = 'none';
+    resultArea.style.display = 'none';
+    errorDisplay.style.display = 'none';
+  }
+
+  function setLoading(isLoading) {
+    generateBtn.disabled = isLoading;
+    loader.style.display = isLoading ? 'block' : 'none';
+    btnText.textContent = isLoading ? 'Thinking...' : 'Describe this for me';
+  }
+
+  function showError(msg) {
+    errorDisplay.textContent = msg;
+    errorDisplay.style.display = 'block';
+  }
+</script>
+
+</body>
+</html>
