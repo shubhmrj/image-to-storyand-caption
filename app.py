@@ -34,7 +34,6 @@ def load_model():
 try:
     processor, model, device = load_model()
 except Exception:
-    # We'll handle this in the routes if needed, or just let it crash on startup
     pass
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
@@ -52,7 +51,6 @@ def caption():
         return jsonify({"error": "No image part in the request"}), 400
 
     file = request.files["image"]
-    style = request.form.get("style", "casual") # Get style from form data
 
     if file.filename == '':
         return jsonify({"error": "No selected image"}), 400
@@ -61,38 +59,27 @@ def caption():
         return jsonify({"error": f"Invalid file type. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"}), 400
 
     try:
-        # Read image
         image_bytes = file.read()
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
         # Process image
         inputs = processor(images=image, return_tensors="pt").to(device)
 
-        # Adjust parameters based on style
-        gen_kwargs = {
-            "max_new_tokens": 50,
-            "num_beams": 5,
-            "early_stopping": True,
-            "repetition_penalty": 1.2
-        }
-
-        if style == "detailed":
-            gen_kwargs["max_new_tokens"] = 100
-            gen_kwargs["num_beams"] = 7
-        elif style == "creative":
-            gen_kwargs["do_sample"] = True
-            gen_kwargs["top_k"] = 50
-            gen_kwargs["top_p"] = 0.95
-            gen_kwargs["temperature"] = 0.7
-
         with torch.no_grad():
-            output = model.generate(**inputs, **gen_kwargs)
+            output = model.generate(
+                **inputs,
+                max_new_tokens=50,
+                num_beams=5,
+                early_stopping=True,
+                repetition_penalty=1.2
+            )
 
         generated_caption = processor.decode(output[0], skip_special_tokens=True)
         
-        # Capitalize the first letter for better UX
         if generated_caption:
             generated_caption = generated_caption.capitalize()
+            if not generated_caption.endswith(('.', '!', '?')):
+                generated_caption += '.'
 
         return jsonify({"caption": generated_caption})
 

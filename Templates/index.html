@@ -232,34 +232,127 @@
       color: var(--primary);
     }
 
+    .listen-btn {
+      position: absolute;
+      top: 15px;
+      right: 165px; /* Positioned next to download button */
+      background: white;
+      border: 1px solid #eee;
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      color: var(--text-light);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .listen-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* Toggle Switch */
+    .mode-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 30px;
+      background: #f0f0f0;
+      padding: 6px;
+      border-radius: 50px;
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .mode-btn {
+      padding: 8px 20px;
+      border-radius: 50px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.3s;
+      color: var(--text-light);
+    }
+
+    .mode-btn.active {
+      background: white;
+      color: var(--primary);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    /* Batch Grid */
+    #batch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .batch-item {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .batch-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .batch-item .status-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.2rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .batch-item.loading .status-overlay { opacity: 1; }
+
+    /* Narrative List */
+    #narrative-list {
+      display: none;
+      margin-top: 30px;
+      text-align: left;
+    }
+
+    .narrative-item {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 25px;
+      padding: 15px;
+      background: #f9fbf8;
+      border-radius: 18px;
+      animation: slideUp 0.5s ease-out;
+    }
+
+    .narrative-thumb {
+      width: 80px;
+      height: 80px;
+      border-radius: 12px;
+      object-fit: cover;
+    }
+
+    .narrative-content {
+      flex: 1;
+    }
+
     .copy-btn:hover {
       border-color: var(--primary);
       color: var(--primary);
-    }
-
-    /* Style Selector */
-    .style-selector {
-      margin-bottom: 25px;
-      display: flex;
-      justify-content: center;
-      gap: 15px;
-    }
-
-    .style-option {
-      cursor: pointer;
-      padding: 8px 16px;
-      border-radius: 12px;
-      font-size: 0.9rem;
-      border: 1px solid #eee;
-      background: #fafafa;
-      transition: all 0.3s;
-    }
-
-    .style-option.active {
-      background: #f4f7f2;
-      border-color: var(--primary);
-      color: var(--primary);
-      font-weight: 600;
     }
 
     @keyframes slideUp {
@@ -330,25 +423,23 @@
   <h1>Vision & Words</h1>
   <p class="subtitle">I'll help you find the right words for your favorite moments.</p>
 
-  <div class="card">
-    <!-- Style Selector -->
-    <div class="style-selector">
-      <div class="style-option active" onclick="setStyle('casual', this)">Casual</div>
-      <div class="style-option" onclick="setStyle('detailed', this)">Detailed</div>
-      <div class="style-option" onclick="setStyle('creative', this)">Creative</div>
-    </div>
+  <div class="mode-toggle">
+    <div class="mode-btn active" id="mode-single" onclick="setMode('single')">Single Photo</div>
+    <div class="mode-btn" id="mode-story" onclick="setMode('story')">Story Mode</div>
+  </div>
 
+  <div class="card">
     <!-- Initial State -->
     <div id="upload-container">
       <div class="upload-section" id="drop-zone">
         <input type="file" id="file-input" accept="image/*" />
         <div class="icon-wrapper">🌿</div>
-        <p>Pick a photo or drag it here</p>
-        <span>Supports JPG, PNG, and WEBP</span>
+        <p id="upload-text">Pick a photo or drag it here</p>
+        <span id="upload-hint">Supports JPG, PNG, and WEBP</span>
       </div>
     </div>
 
-    <!-- Preview State -->
+    <!-- Preview State (Single) -->
     <div id="preview-container">
       <img id="image-preview" src="" alt="Your beautiful photo" />
       <div class="btn-group">
@@ -360,15 +451,33 @@
       </div>
     </div>
 
+    <!-- Preview State (Story) -->
+    <div id="story-preview-container" style="display: none;">
+      <div id="batch-grid"></div>
+      <div class="btn-group">
+        <button class="btn btn-secondary" onclick="reset()">Clear all</button>
+        <button class="btn btn-primary flex-center" id="generate-story-btn" onclick="generateStory()">
+          <div class="loader" id="story-loader"></div>
+          <span id="story-btn-text">Tell our story</span>
+        </button>
+      </div>
+    </div>
+
     <p class="error-msg" id="error-display"></p>
 
-    <!-- Result State -->
+    <!-- Result State (Single) -->
     <div id="result-area">
+      <button class="listen-btn" onclick="speakResult()">
+        <span class="icon">🔊</span> Listen
+      </button>
       <button class="download-btn" id="download-btn" onclick="downloadResult()">Download</button>
       <button class="copy-btn" id="copy-btn" onclick="copyCaption()">Copy</button>
       <span class="result-label">I see...</span>
       <p id="caption-text"></p>
     </div>
+
+    <!-- Result State (Story) -->
+    <div id="narrative-list"></div>
   </div>
 
   <footer>
@@ -389,14 +498,39 @@
   const btnText = document.getElementById('btn-text');
   const errorDisplay = document.getElementById('error-display');
 
-  let currentStyle = 'casual';
+  let currentMode = 'single';
+  let currentFiles = [];
 
-  function setStyle(style, el) {
-    currentStyle = style;
-    document.querySelectorAll('.style-option').forEach(opt => opt.classList.remove('active'));
-    el.classList.add('active');
-    // If we have a result, maybe auto-regenerate? 
-    // For now just set the style for the next generation
+  function setMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`mode-${mode}`).classList.add('active');
+    
+    // Update upload hint
+    const text = document.getElementById('upload-text');
+    const hint = document.getElementById('upload-hint');
+    const input = document.getElementById('file-input');
+    
+    if (mode === 'story') {
+      text.textContent = 'Pick 3 to 5 photos for your story';
+      hint.textContent = 'Drag multiple images or select together';
+      input.multiple = true;
+    } else {
+      text.textContent = 'Pick a photo or drag it here';
+      hint.textContent = 'Supports JPG, PNG, and WEBP';
+      input.multiple = false;
+    }
+    reset();
+  }
+
+  function speakResult(text = null) {
+    const speechText = text || captionText.textContent;
+    if (!speechText) return;
+    
+    const utterance = new SpeechSynthesisUtterance(speechText);
+    utterance.rate = 0.9; // Slightly slower for a more natural feel
+    utterance.pitch = 1.1; // Slightly higher for a friendly tone
+    window.speechSynthesis.speak(utterance);
   }
 
   function copyCaption() {
@@ -487,37 +621,63 @@
     handleFiles(this.files);
   });
 
-  // Handle Files
-  let currentFile = null;
   function handleFiles(files) {
     if (files.length === 0) return;
-    currentFile = files[0];
     
-    if (!currentFile.type.startsWith('image/')) {
-      showError("Please pick an image file so I can see it clearly.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      imagePreview.src = e.target.result;
+    if (currentMode === 'single') {
+      const file = files[0];
+      if (!file.type.startsWith('image/')) {
+        showError("Please pick an image file so I can see it clearly.");
+        return;
+      }
+      currentFiles = [file];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        imagePreview.src = e.target.result;
+        uploadContainer.style.display = 'none';
+        previewContainer.style.display = 'block';
+        resultArea.style.display = 'none';
+        errorDisplay.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // Story Mode
+      const validFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+      if (validFiles.length < 3 || validFiles.length > 5) {
+        showError("Please pick between 3 and 5 photos for your story.");
+        return;
+      }
+      currentFiles = validFiles;
       uploadContainer.style.display = 'none';
-      previewContainer.style.display = 'block';
-      resultArea.style.display = 'none';
-      errorDisplay.style.display = 'none';
-    };
-    reader.readAsDataURL(currentFile);
+      document.getElementById('story-preview-container').style.display = 'block';
+      const grid = document.getElementById('batch-grid');
+      grid.innerHTML = '';
+      
+      currentFiles.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const div = document.createElement('div');
+          div.className = 'batch-item';
+          div.id = `batch-item-${index}`;
+          div.innerHTML = `
+            <img src="${e.target.result}" />
+            <div class="status-overlay">✨</div>
+          `;
+          grid.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
   }
 
   async function generateCaption() {
-    if (!currentFile) return;
+    if (currentFiles.length === 0) return;
 
     setLoading(true);
     errorDisplay.style.display = 'none';
 
     const formData = new FormData();
-    formData.append('image', currentFile);
-    formData.append('style', currentStyle);
+    formData.append('image', currentFiles[0]);
 
     try {
       const response = await fetch('/caption', {
@@ -548,12 +708,69 @@
     }
   }
 
+  async function generateStory() {
+    if (currentFiles.length < 3) return;
+
+    setStoryLoading(true);
+    errorDisplay.style.display = 'none';
+    const list = document.getElementById('narrative-list');
+    list.innerHTML = '';
+    list.style.display = 'block';
+
+    for (let i = 0; i < currentFiles.length; i++) {
+      const file = currentFiles[i];
+      const itemEl = document.getElementById(`batch-item-${i}`);
+      itemEl.classList.add('loading');
+
+      const formData = new FormData();
+      formData.append('image', file);
+
+      try {
+        const response = await fetch('/caption', { method: 'POST', body: formData });
+        const data = await response.json();
+
+        if (response.ok) {
+          addNarrativeItem(file, data.caption);
+          itemEl.classList.remove('loading');
+          itemEl.querySelector('.status-overlay').style.opacity = '1';
+        }
+      } catch (err) {
+        console.error("Story generation error:", err);
+      }
+    }
+    setStoryLoading(false);
+    
+    // Auto-speak the whole story
+    const fullStory = Array.from(list.querySelectorAll('p')).map(p => p.textContent).join(' ');
+    speakResult(fullStory);
+  }
+
+  function addNarrativeItem(file, caption) {
+    const list = document.getElementById('narrative-list');
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const div = document.createElement('div');
+      div.className = 'narrative-item';
+      div.innerHTML = `
+        <img src="${e.target.result}" class="narrative-thumb" />
+        <div class="narrative-content">
+          <p>${caption}</p>
+        </div>
+      `;
+      list.appendChild(div);
+      div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+    reader.readAsDataURL(file);
+  }
+
   function reset() {
-    currentFile = null;
+    currentFiles = [];
     fileInput.value = '';
     uploadContainer.style.display = 'block';
     previewContainer.style.display = 'none';
+    document.getElementById('story-preview-container').style.display = 'none';
     resultArea.style.display = 'none';
+    document.getElementById('narrative-list').style.display = 'none';
     errorDisplay.style.display = 'none';
   }
 
@@ -561,6 +778,15 @@
     generateBtn.disabled = isLoading;
     loader.style.display = isLoading ? 'block' : 'none';
     btnText.textContent = isLoading ? 'Thinking...' : 'Describe this for me';
+  }
+
+  function setStoryLoading(isLoading) {
+    const btn = document.getElementById('generate-story-btn');
+    const loader = document.getElementById('story-loader');
+    const text = document.getElementById('story-btn-text');
+    btn.disabled = isLoading;
+    loader.style.display = isLoading ? 'block' : 'none';
+    text.textContent = isLoading ? 'Writing your story...' : 'Tell our story';
   }
 
   function showError(msg) {
