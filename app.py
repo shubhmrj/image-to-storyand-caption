@@ -18,7 +18,7 @@ from deep_translator import GoogleTranslator
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='Templates')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 BLIP_MODEL_ID = "shubmrj/blip-coco-finetuned"
