@@ -27,14 +27,16 @@ DEVICE        = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ── Load BLIP ─────────────────────────────────────────────────
 logger.info("Loading BLIP from %s...", BLIP_MODEL_ID)
-blip_processor = BlipProcessor.from_pretrained(BLIP_MODEL_ID)
+# Load processor from base model (fine-tuned repo might lack preprocessor_config.json)
+blip_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
 blip_model     = BlipForConditionalGeneration.from_pretrained(BLIP_MODEL_ID).to(DEVICE)
 blip_model.eval()
 logger.info("BLIP ready on %s", DEVICE)
 
 # ── Load GPT-2 ────────────────────────────────────────────────
 logger.info("Loading GPT-2 from %s...", GPT2_MODEL_ID)
-gpt2_tokenizer = GPT2Tokenizer.from_pretrained(GPT2_MODEL_ID)
+# Load tokenizer from base gpt2 for stability
+gpt2_tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 gpt2_model     = GPT2LMHeadModel.from_pretrained(GPT2_MODEL_ID).to(DEVICE)
 gpt2_model.eval()
 logger.info("GPT-2 ready on %s", DEVICE)
