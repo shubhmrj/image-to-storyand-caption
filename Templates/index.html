@@ -82,30 +82,9 @@
 
     .mode-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
 
-    /* Mood Selectors */
+    /* Mood Selectors - REMOVED */
     .mood-selectors {
       display: none;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    .mood-btn {
-      padding: 6px 14px;
-      border-radius: 12px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      border: 1px solid #eee;
-      background: #fafafa;
-      color: var(--text-light);
-      transition: all 0.2s;
-    }
-
-    .mood-btn.active {
-      border-color: var(--primary);
-      background: #f4f7f2;
-      color: var(--primary);
     }
 
     .upload-section {
@@ -275,13 +254,6 @@
     <div id="preview-container">
       <img id="image-preview" src="" alt="Your photo" />
       
-      <div class="mood-selectors" id="mood-area">
-        <div class="mood-btn active" onclick="setMood('creative', this)">Creative</div>
-        <div class="mood-btn" onclick="setMood('mysterious', this)">Mysterious</div>
-        <div class="mood-btn" onclick="setMood('whimsical', this)">Whimsical</div>
-        <div class="mood-btn" onclick="setMood('professional', this)">Professional</div>
-      </div>
-
       <div class="btn-group">
         <button class="btn btn-secondary" id="reset-btn" onclick="reset()">Choose another</button>
         <button class="btn btn-primary flex-center" id="generate-btn" onclick="startGeneration()">
@@ -357,7 +329,6 @@
   const errorDisplay = document.getElementById('error-display');
 
   let currentMode = 'single';
-  let currentMood = 'creative';
   let currentFiles = [];
   let currentCaption = '';
   let eventSource = null;
@@ -366,15 +337,8 @@
     currentMode = mode;
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
     document.getElementById(`mode-${mode}`).classList.add('active');
-    document.getElementById('mood-area').style.display = mode === 'story' ? 'flex' : 'none';
     document.getElementById('btn-text').textContent = mode === 'single' ? 'Describe for me' : 'Tell my story';
     reset();
-  }
-
-  function setMood(mood, el) {
-    currentMood = mood;
-    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
-    el.classList.add('active');
   }
 
   ['dragenter','dragover','dragleave','drop'].forEach(e => dropZone.addEventListener(e, ev => { ev.preventDefault(); ev.stopPropagation(); }));
@@ -398,7 +362,6 @@
         const grid = document.getElementById('batch-grid');
         grid.innerHTML = `<div class="batch-item"><img src="${e.target.result}" /><div class="status-overlay"><i class="fa-solid fa-check"></i></div></div>`;
         storyPreviewContainer.style.display = 'block';
-        document.getElementById('mood-area').style.display = 'flex';
       }
     };
     reader.readAsDataURL(file);
@@ -442,7 +405,7 @@
   function streamStory(isContinuation = false) {
     if (eventSource) eventSource.close();
     
-    let url = `/story-stream?caption=${encodeURIComponent(currentCaption)}&mood=${currentMood}`;
+    let url = `/story-stream?caption=${encodeURIComponent(currentCaption)}`;
     if (isContinuation) {
       url += `&continue_text=${encodeURIComponent(storyText.textContent)}`;
     }

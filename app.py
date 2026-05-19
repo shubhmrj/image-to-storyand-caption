@@ -1,9 +1,7 @@
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-import logging
 import json
-import time
 from flask import Flask, request, jsonify, render_template, Response, stream_with_context
 import torch
 from transformers import (
@@ -15,49 +13,38 @@ import io
 from threading import Thread
 from deep_translator import GoogleTranslator
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 app = Flask(__name__, template_folder='Templates')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 BLIP_MODEL_ID = "Salesforce/blip-image-captioning-base"
 GPT2_MODEL_ID = "gpt2"
-DEVICE        = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ── Load BLIP ─────────────────────────────────────────────────
 logger.info("Loading BLIP from %s...", BLIP_MODEL_ID)
 blip_processor = BlipProcessor.from_pretrained(BLIP_MODEL_ID)
-blip_model     = BlipForConditionalGeneration.from_pretrained(BLIP_MODEL_ID).to(DEVICE)
+blip_model     = BlipForConditionalGeneration.from_pretrained(BLIP_MODEL_ID)
 blip_model.eval()
-logger.info("BLIP ready on %s", DEVICE)
+logger.info("BLIP ready")
 
 # ── Load GPT-2 ────────────────────────────────────────────────
 logger.info("Loading GPT-2 from %s...", GPT2_MODEL_ID)
 gpt2_tokenizer = GPT2Tokenizer.from_pretrained(GPT2_MODEL_ID)
-# Ensure tokenizer has a padding token
 if gpt2_tokenizer.pad_token is None:
     gpt2_tokenizer.pad_token = gpt2_tokenizer.eos_token
 
-gpt2_model = GPT2LMHeadModel.from_pretrained(GPT2_MODEL_ID).to(DEVICE)
+gpt2_model = GPT2LMHeadModel.from_pretrained(GPT2_MODEL_ID)
 gpt2_model.eval()
-logger.info("GPT-2 ready on %s", DEVICE)
+logger.info("GPT-2 ready")
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
-
-MOOD_PROMPTS = {
-    "mysterious": "A mysterious and suspenseful story about:",
-    "whimsical": "A whimsical and magical story about:",
-    "professional": "A professional and formal narrative about:",
-    "creative": "A creative and engaging story about:"
-}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_caption(image):
     """Image → Caption using BLIP"""
-    inputs = blip_processor(images=image, return_tensors="pt").to(DEVICE)
+    inputs = blip_processor(images=image, return_tensors="pt")
     with torch.no_grad():
         output = blip_model.generate(
             **inputs,
@@ -73,22 +60,18 @@ def get_caption(image):
             caption += '.'
     return caption
 
-def clean_story(full_text, caption, mood_prompt=""):
+def clean_story(full_text, caption):
     """Clean the generated story text"""
     for token in ["<|story|>", "<|endofstory|>", "<|pad|>", "<|endoftext|>"]:
         full_text = full_text.replace(token, "")
 
     story = full_text.strip()
     
-    # Remove prompts
-    to_remove = [caption, mood_prompt, "A mysterious and suspenseful story about:", 
-                 "A whimsical and magical story about:", "A professional and formal narrative about:", 
-                 "A creative and engaging story about:"]
-    for p in to_remove:
-        if p and p.lower() in story.lower():
-            idx = story.lower().find(p.lower())
-            if idx != -1:
-                story = story[:idx] + story[idx + len(p):]
+    # Remove prompt
+    prompt = f"A creative and engaging story about: {caption}"
+    if prompt.lower() in story.lower():
+        idx = story.lower().find(prompt.lower())
+        story = story[:idx] + story[idx + len(prompt):]
 
     story = story.strip()
     while story and story[0] in ".,!?;: ":
@@ -121,17 +104,14 @@ def caption():
 @app.route("/story-stream")
 def story_stream():
     caption = request.args.get('caption', '')
-    mood = request.args.get('mood', 'creative')
     continue_text = request.args.get('continue_text', '')
-    
-    mood_prompt = MOOD_PROMPTS.get(mood, MOOD_PROMPTS['creative'])
     
     if continue_text:
         input_text = f"{continue_text} Then,"
     else:
-        input_text = f"<|story|> {mood_prompt} {caption}."
+        input_text = f"A creative and engaging story about: {caption}"
 
-    input_ids = gpt2_tokenizer.encode(input_text, return_tensors="pt").to(DEVICE)
+    input_ids = gpt2_tokenizer.encode(input_text, return_tensors="pt")
     streamer = TextIteratorStreamer(gpt2_tokenizer, skip_prompt=True, skip_special_tokens=True)
 
     generation_kwargs = dict(
@@ -169,9 +149,7 @@ def translate():
         translated = GoogleTranslator(source='auto', target=target_lang).translate(text)
         return jsonify({"translated": translated})
     except Exception as e:
-        logger.error("Translation error: %s", str(e))
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    # Use port 7860 for Hugging Face Spaces compatibility
     app.run(host="0.0.0.0", port=7860)
