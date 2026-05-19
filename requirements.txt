@@ -4,3 +4,4 @@ transformers==4.36.2
 Pillow==10.1.0
 Werkzeug==3.0.1
 deep-translator==1.11.4
+gunicorn==21.2.0
