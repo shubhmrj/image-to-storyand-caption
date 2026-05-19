@@ -21,21 +21,21 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-BLIP_PATH = "Models/blip"
-GPT2_PATH = "Models/gpt2"
-DEVICE    = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+BLIP_MODEL_ID = "shubmrj/blip-coco-finetuned"
+GPT2_MODEL_ID = "shubmrj/gpt2-rocstories-finetuned"
+DEVICE        = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ── Load BLIP ─────────────────────────────────────────────────
-logger.info("Loading BLIP from %s...", BLIP_PATH)
-blip_processor = BlipProcessor.from_pretrained(BLIP_PATH)
-blip_model     = BlipForConditionalGeneration.from_pretrained(BLIP_PATH).to(DEVICE)
+logger.info("Loading BLIP from %s...", BLIP_MODEL_ID)
+blip_processor = BlipProcessor.from_pretrained(BLIP_MODEL_ID)
+blip_model     = BlipForConditionalGeneration.from_pretrained(BLIP_MODEL_ID).to(DEVICE)
 blip_model.eval()
 logger.info("BLIP ready on %s", DEVICE)
 
 # ── Load GPT-2 ────────────────────────────────────────────────
-logger.info("Loading GPT-2 from %s...", GPT2_PATH)
-gpt2_tokenizer = GPT2Tokenizer.from_pretrained(GPT2_PATH)
-gpt2_model     = GPT2LMHeadModel.from_pretrained(GPT2_PATH).to(DEVICE)
+logger.info("Loading GPT-2 from %s...", GPT2_MODEL_ID)
+gpt2_tokenizer = GPT2Tokenizer.from_pretrained(GPT2_MODEL_ID)
+gpt2_model     = GPT2LMHeadModel.from_pretrained(GPT2_MODEL_ID).to(DEVICE)
 gpt2_model.eval()
 logger.info("GPT-2 ready on %s", DEVICE)
 
@@ -169,4 +169,5 @@ def translate():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    # Use port 7860 for Hugging Face Spaces compatibility
+    app.run(host="0.0.0.0", port=7860)
