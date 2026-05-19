@@ -7,6 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     :root {
       --bg-color: #fdfaf6;
@@ -36,7 +38,7 @@
       line-height: 1.6;
     }
 
-    .container { max-width: 600px; width: 100%; text-align: center; animation: fadeIn 0.8s ease-out; }
+    .container { max-width: 650px; width: 100%; text-align: center; animation: fadeIn 0.8s ease-out; }
 
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
@@ -54,7 +56,6 @@
       border: 1px solid rgba(0,0,0,0.02);
     }
 
-    /* Mode Toggle */
     .mode-toggle {
       display: flex;
       align-items: center;
@@ -81,7 +82,32 @@
 
     .mode-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
 
-    /* Upload Area */
+    /* Mood Selectors */
+    .mood-selectors {
+      display: none;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .mood-btn {
+      padding: 6px 14px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #eee;
+      background: #fafafa;
+      color: var(--text-light);
+      transition: all 0.2s;
+    }
+
+    .mood-btn.active {
+      border-color: var(--primary);
+      background: #f4f7f2;
+      color: var(--primary);
+    }
+
     .upload-section {
       position: relative;
       border: 2px dashed #e0e0e0;
@@ -102,22 +128,19 @@
     }
 
     .icon-wrapper { font-size: 48px; margin-bottom: 15px; display: inline-block; transition: transform 0.3s ease; }
-    .upload-section:hover .icon-wrapper { transform: translateY(-5px); }
     .upload-section p { font-weight: 500; color: #666; }
     .upload-section span { font-size: 0.9rem; color: var(--text-light); }
 
-    /* Preview */
     #preview-container { display: none; margin-bottom: 0; }
     #image-preview { width: 100%; max-height: 400px; object-fit: cover; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 20px; }
 
-    /* Buttons */
-    .btn-group { display: flex; gap: 12px; justify-content: center; }
+    .btn-group { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
     .btn {
-      padding: 14px 28px;
+      padding: 12px 24px;
       border-radius: 50px;
       font-family: 'Quicksand', sans-serif;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.3s ease;
@@ -125,13 +148,12 @@
       outline: none;
     }
 
-    .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(124,144,112,0.3); }
+    .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(124, 144, 112, 0.3); }
     .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
     .btn-secondary { background: transparent; color: var(--text-light); border: 1px solid #e0e0e0; }
     .btn-secondary:hover { background: #f5f5f5; color: var(--text-main); }
     .btn:disabled { background: #d0d0d0; cursor: not-allowed; box-shadow: none; transform: none; }
 
-    /* Caption Result (Single Photo) */
     #result-area {
       display: none;
       margin-top: 30px;
@@ -144,17 +166,20 @@
       position: relative;
     }
 
-    .action-btns { position: absolute; top: 15px; right: 15px; display: flex; gap: 8px; }
+    .action-btns { margin-bottom: 15px; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 
     .action-btn {
       background: white;
       border: 1px solid #eee;
-      padding: 5px 10px;
+      padding: 6px 12px;
       border-radius: 8px;
       font-size: 0.75rem;
       cursor: pointer;
       color: var(--text-light);
       transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
 
     .action-btn:hover { border-color: var(--primary); color: var(--primary); }
@@ -169,30 +194,28 @@
       display: block;
     }
 
-    #caption-text { font-family: 'Lora', serif; font-size: 1.3rem; color: #333; font-style: italic; }
+    #caption-text, #story-text { font-family: 'Lora', serif; color: #333; }
+    #caption-text { font-size: 1.3rem; font-style: italic; }
+    #story-text { font-size: 1rem; line-height: 1.8; white-space: pre-wrap; }
 
-    /* Story Result (Story Mode) */
-    #story-result-area {
-      display: none;
-      margin-top: 24px;
-      animation: slideUp 0.5s ease-out;
+    /* Translation Layer */
+    .translation-bar {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: flex-end;
     }
 
-    .story-block {
-      padding: 20px 22px;
-      border-radius: 16px;
-      text-align: left;
-      margin-bottom: 14px;
-      position: relative;
+    .lang-select {
+      padding: 4px 8px;
+      border-radius: 8px;
+      border: 1px solid #eee;
+      font-size: 0.8rem;
+      outline: none;
     }
-
-    .caption-block { background: #f9fbf8; border-left: 4px solid var(--primary); }
-    .generated-story-block { background: #fdf8ff; border-left: 4px solid #9b7fc2; }
-
-    .generated-story-block .result-label { color: #9b7fc2; }
-
-    #story-caption-text { font-family: 'Lora', serif; font-size: 1.1rem; color: #333; font-style: italic; }
-    #story-text { font-size: 1rem; color: #444; line-height: 1.8; }
 
     /* Batch Grid */
     #story-preview-container { display: none; }
@@ -209,20 +232,6 @@
     }
     .batch-item.done .status-overlay { opacity: 1; }
 
-    .batch-item.loading::after {
-      content: '\f110';
-      font-family: "Font Awesome 6 Free";
-      font-weight: 900;
-      position: absolute;
-      inset: 0;
-      background: rgba(255,255,255,0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      animation: spin 1s linear infinite;
-    }
-
-    /* Loader */
     .loader {
       display: none;
       width: 20px; height: 20px;
@@ -235,12 +244,6 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes successPulse {
-      0%   { transform: scale(1); }
-      50%  { transform: scale(1.01); box-shadow: 0 0 20px rgba(124,144,112,0.2); }
-      100% { transform: scale(1); }
-    }
-    .pulse { animation: successPulse 0.5s ease-out; }
 
     .error-msg { color: var(--error); font-size: 0.9rem; margin-top: 15px; display: none; }
 
@@ -254,42 +257,46 @@
   <h1>Vision & Words</h1>
   <p class="subtitle">I'll help you find the right words for your favorite moments.</p>
 
-  <!-- Mode Toggle -->
   <div class="mode-toggle">
     <div class="mode-btn active" id="mode-single" onclick="setMode('single')"><i class="fa-solid fa-camera"></i> Single Photo</div>
     <div class="mode-btn"        id="mode-story"  onclick="setMode('story')"><i class="fa-solid fa-book-open"></i> Story Mode</div>
   </div>
 
   <div class="card">
-
-    <!-- ── UPLOAD AREA (shared) ──────────────────────────── -->
     <div id="upload-container">
       <div class="upload-section" id="drop-zone">
         <input type="file" id="file-input" accept="image/*" />
         <div class="icon-wrapper"><i class="fa-solid fa-cloud-arrow-up"></i></div>
-        <p id="upload-text">Select a photo or drag it here</p>
+        <p id="upload-text">Select a photo to begin</p>
         <span id="upload-hint">JPG, PNG, WEBP</span>
       </div>
     </div>
 
-    <!-- ── SINGLE PHOTO: preview + button ───────────────── -->
     <div id="preview-container">
       <img id="image-preview" src="" alt="Your photo" />
+      
+      <div class="mood-selectors" id="mood-area">
+        <div class="mood-btn active" onclick="setMood('creative', this)">Creative</div>
+        <div class="mood-btn" onclick="setMood('mysterious', this)">Mysterious</div>
+        <div class="mood-btn" onclick="setMood('whimsical', this)">Whimsical</div>
+        <div class="mood-btn" onclick="setMood('professional', this)">Professional</div>
+      </div>
+
       <div class="btn-group">
-        <button class="btn btn-secondary" onclick="reset()">Choose another</button>
-        <button class="btn btn-primary flex-center" id="generate-btn" onclick="generateCaption()">
+        <button class="btn btn-secondary" id="reset-btn" onclick="reset()">Choose another</button>
+        <button class="btn btn-primary flex-center" id="generate-btn" onclick="startGeneration()">
           <div class="loader" id="loader"></div>
-          <span id="btn-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Describe for me</span>
+          <span id="btn-text">Describe this for me</span>
         </button>
       </div>
     </div>
 
-    <!-- ── STORY MODE: grid + button ────────────────────── -->
     <div id="story-preview-container">
       <div id="batch-grid"></div>
+      <!-- Mood selectors also for story mode if needed, but let's keep it simple for now -->
       <div class="btn-group">
         <button class="btn btn-secondary" onclick="reset()">Clear all</button>
-        <button class="btn btn-primary flex-center" id="generate-story-btn" onclick="generateStory()">
+        <button class="btn btn-primary flex-center" id="story-btn" onclick="startGeneration()">
           <div class="loader" id="story-loader"></div>
           <span id="story-btn-text">Tell my story</span>
         </button>
@@ -298,210 +305,236 @@
 
     <p class="error-msg" id="error-display"></p>
 
-    <!-- ── SINGLE PHOTO RESULT: caption only ────────────── -->
     <div id="result-area">
       <div class="action-btns">
-        <button class="action-btn" onclick="speakText(document.getElementById('caption-text').textContent)"><i class="fa-solid fa-volume-high"></i> Listen</button>
-        <button class="action-btn" onclick="copyText('caption-text', this)"><i class="fa-solid fa-copy"></i> Copy</button>
+        <button class="action-btn" onclick="exportDoc('pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+        <button class="action-btn" onclick="exportDoc('md')"><i class="fa-solid fa-file-code"></i> MD</button>
+        <button class="action-btn" onclick="speakText()"><i class="fa-solid fa-volume-high"></i> Listen</button>
+        <button class="action-btn" onclick="copyResult()"><i class="fa-solid fa-copy"></i> Copy</button>
       </div>
-      <span class="result-label">I see...</span>
-      <p id="caption-text"></p>
-    </div>
 
-    <!-- ── STORY MODE RESULT: caption + story ───────────── -->
-    <div id="story-result-area">
-      <div class="story-block caption-block">
-        <span class="result-label"><i class="fa-solid fa-pen-nib"></i> Caption (BLIP)</span>
-        <p id="story-caption-text"></p>
+      <div id="caption-block">
+        <span class="result-label">Observation</span>
+        <p id="caption-text"></p>
       </div>
-      <div class="story-block generated-story-block">
-        <div class="action-btns">
-          <button class="action-btn" onclick="speakText(document.getElementById('story-text').textContent)"><i class="fa-solid fa-volume-high"></i> Listen</button>
-          <button class="action-btn" onclick="copyText('story-text', this)"><i class="fa-solid fa-copy"></i> Copy</button>
-        </div>
-        <span class="result-label"><i class="fa-solid fa-wand-magic-sparkles"></i> Story (GPT-2)</span>
+
+      <div id="story-block" style="display:none; margin-top: 20px;">
+        <span class="result-label">The Story</span>
         <p id="story-text"></p>
+        
+        <div class="btn-group" style="margin-top: 15px; justify-content: flex-start;">
+          <button class="btn btn-secondary btn-small" id="continue-btn" onclick="continueStory()" style="padding: 6px 16px; font-size: 0.8rem;">
+            <i class="fa-solid fa-plus"></i> Continue Story
+          </button>
+        </div>
+
+        <div class="translation-bar">
+          <select class="lang-select" id="target-lang">
+            <option value="en">English</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="ja">Japanese</option>
+            <option value="zh">Chinese</option>
+          </select>
+          <button class="action-btn" onclick="translateText()"><i class="fa-solid fa-language"></i> Translate</button>
+        </div>
       </div>
     </div>
-
   </div>
   <footer>Crafted with care by your AI companion</footer>
 </div>
 
 <script>
-  const fileInput    = document.getElementById('file-input');
-  const dropZone     = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('file-input');
+  const dropZone = document.getElementById('drop-zone');
   const uploadContainer = document.getElementById('upload-container');
+  const previewContainer = document.getElementById('preview-container');
+  const storyPreviewContainer = document.getElementById('story-preview-container');
+  const resultArea = document.getElementById('result-area');
+  const captionText = document.getElementById('caption-text');
+  const storyText = document.getElementById('story-text');
+  const errorDisplay = document.getElementById('error-display');
 
-  let currentMode  = 'single';
+  let currentMode = 'single';
+  let currentMood = 'creative';
   let currentFiles = [];
+  let currentCaption = '';
+  let eventSource = null;
 
-  // ── Mode Switch ──────────────────────────────────────────────
   function setMode(mode) {
     currentMode = mode;
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
     document.getElementById(`mode-${mode}`).classList.add('active');
-
-    if (mode === 'story') {
-      document.getElementById('upload-text').textContent  = 'Pick one photo for your story';
-      document.getElementById('upload-hint').textContent  = 'BLIP captions it, GPT-2 writes the story';
-      fileInput.multiple = false;
-    } else {
-      document.getElementById('upload-text').textContent  = 'Pick a photo or drag it here';
-      document.getElementById('upload-hint').textContent  = 'Supports JPG, PNG, and WEBP';
-      fileInput.multiple = false;
-    }
+    document.getElementById('mood-area').style.display = mode === 'story' ? 'flex' : 'none';
+    document.getElementById('btn-text').textContent = mode === 'single' ? 'Describe for me' : 'Tell my story';
     reset();
   }
 
-  // ── Drag & Drop ──────────────────────────────────────────────
+  function setMood(mood, el) {
+    currentMood = mood;
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+  }
+
   ['dragenter','dragover','dragleave','drop'].forEach(e => dropZone.addEventListener(e, ev => { ev.preventDefault(); ev.stopPropagation(); }));
   ['dragenter','dragover'].forEach(e => dropZone.addEventListener(e, () => dropZone.classList.add('dragover')));
   ['dragleave','drop'].forEach(e => dropZone.addEventListener(e, () => dropZone.classList.remove('dragover')));
   dropZone.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
-  fileInput.addEventListener('change', function () { handleFiles(this.files); });
+  fileInput.addEventListener('change', function() { handleFiles(this.files); });
 
-  // ── File Handler ─────────────────────────────────────────────
   function handleFiles(files) {
     if (!files.length) return;
     const file = files[0];
     if (!file.type.startsWith('image/')) { showError("Please pick a valid image file."); return; }
-
     currentFiles = [file];
-
     const reader = new FileReader();
     reader.onload = e => {
-      hideAllResults();
       uploadContainer.style.display = 'none';
-
       if (currentMode === 'single') {
         document.getElementById('image-preview').src = e.target.result;
-        document.getElementById('preview-container').style.display = 'block';
+        previewContainer.style.display = 'block';
       } else {
-        // Story mode: show image in a simple grid
         const grid = document.getElementById('batch-grid');
-        grid.innerHTML = `
-          <div class="batch-item" id="batch-item-0">
-            <img src="${e.target.result}" />
-            <div class="status-overlay"><i class="fa-solid fa-check"></i></div>
-          </div>`;
-        document.getElementById('story-preview-container').style.display = 'block';
+        grid.innerHTML = `<div class="batch-item"><img src="${e.target.result}" /><div class="status-overlay"><i class="fa-solid fa-check"></i></div></div>`;
+        storyPreviewContainer.style.display = 'block';
+        document.getElementById('mood-area').style.display = 'flex';
       }
     };
     reader.readAsDataURL(file);
   }
 
-  // ── Single Photo: Caption ────────────────────────────────────
-  async function generateCaption() {
+  async function startGeneration() {
     if (!currentFiles.length) return;
-    setLoading('single', true);
-    hideAllResults();
-
+    hideError();
+    setLoading(true);
+    resultArea.style.display = 'none';
+    storyText.textContent = '';
+    
     const fd = new FormData();
     fd.append('image', currentFiles[0]);
 
     try {
-      const res  = await fetch('/caption', { method: 'POST', body: fd });
+      const res = await fetch('/caption', { method: 'POST', body: fd });
       const data = await res.json();
       if (data.caption) {
-        document.getElementById('caption-text').textContent = data.caption;
-        document.getElementById('result-area').style.display = 'block';
-        document.querySelector('.card').classList.add('pulse');
-        document.getElementById('result-area').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        currentCaption = data.caption;
+        captionText.textContent = currentCaption;
+        resultArea.style.display = 'block';
+        
+        if (currentMode === 'story') {
+          document.getElementById('story-block').style.display = 'block';
+          streamStory();
+        } else {
+          document.getElementById('story-block').style.display = 'none';
+          setLoading(false);
+        }
       } else {
-        showError(data.error || "Something went wrong. Try another photo.");
+        showError(data.error);
+        setLoading(false);
       }
-    } catch { showError("Cannot reach the server. Is Flask running?"); }
-
-    setLoading('single', false);
-  }
-
-  // ── Story Mode: Caption + Story ──────────────────────────────
-  async function generateStory() {
-    if (!currentFiles.length) return;
-    setLoading('story', true);
-    hideAllResults();
-
-    // Mark image as loading
-    const item = document.getElementById('batch-item-0');
-    if (item) item.style.opacity = '0.6';
-
-    const fd = new FormData();
-    fd.append('image', currentFiles[0]);
-
-    try {
-      const res  = await fetch('/story', { method: 'POST', body: fd });
-      const data = await res.json();
-
-      if (data.caption && data.story) {
-        document.getElementById('story-caption-text').textContent = data.caption;
-        document.getElementById('story-text').textContent         = data.story;
-        document.getElementById('story-result-area').style.display = 'block';
-
-        if (item) { item.style.opacity = '1'; item.classList.add('done'); }
-
-        document.getElementById('story-result-area').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      } else {
-        showError(data.error || "Could not generate story. Try another image.");
-        if (item) item.style.opacity = '1';
-      }
-    } catch { showError("Cannot reach the server. Is Flask running?"); }
-
-    setLoading('story', false);
-  }
-
-  // ── Helpers ──────────────────────────────────────────────────
-  function reset() {
-    currentFiles = [];
-    fileInput.value = '';
-    uploadContainer.style.display = 'block';
-    document.getElementById('preview-container').style.display       = 'none';
-    document.getElementById('story-preview-container').style.display = 'none';
-    hideAllResults();
-  }
-
-  function hideAllResults() {
-    document.getElementById('result-area').style.display       = 'none';
-    document.getElementById('story-result-area').style.display = 'none';
-    document.getElementById('error-display').style.display     = 'none';
-  }
-
-  function setLoading(mode, on) {
-    if (mode === 'single') {
-      const btn = document.getElementById('generate-btn');
-      btn.disabled = on;
-      document.getElementById('loader').style.display   = on ? 'block' : 'none';
-      document.getElementById('btn-text').textContent   = on ? 'Thinking...' : 'Describe this for me';
-    } else {
-      const btn = document.getElementById('generate-story-btn');
-      btn.disabled = on;
-      document.getElementById('story-loader').style.display  = on ? 'block' : 'none';
-      document.getElementById('story-btn-text').textContent  = on ? 'Writing story...' : 'Tell my story';
+    } catch {
+      showError("Server error.");
+      setLoading(false);
     }
   }
 
-  function showError(msg) {
-    const el = document.getElementById('error-display');
-    el.textContent    = msg;
-    el.style.display  = 'block';
+  function streamStory(isContinuation = false) {
+    if (eventSource) eventSource.close();
+    
+    let url = `/story-stream?caption=${encodeURIComponent(currentCaption)}&mood=${currentMood}`;
+    if (isContinuation) {
+      url += `&continue_text=${encodeURIComponent(storyText.textContent)}`;
+    }
+
+    eventSource = new EventSource(url);
+    
+    eventSource.onmessage = function(e) {
+      if (e.data === '[DONE]') {
+        eventSource.close();
+        setLoading(false);
+        return;
+      }
+      const data = JSON.parse(e.data);
+      storyText.textContent += data.text;
+      resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+
+    eventSource.onerror = function() {
+      eventSource.close();
+      setLoading(false);
+    };
   }
 
-  function speakText(text) {
+  function continueStory() {
+    setLoading(true);
+    streamStory(true);
+  }
+
+  async function translateText() {
+    const text = storyText.textContent;
+    const lang = document.getElementById('target-lang').value;
     if (!text) return;
+    
+    try {
+      const res = await fetch('/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, lang })
+      });
+      const data = await res.json();
+      if (data.translated) {
+        storyText.textContent = data.translated;
+      }
+    } catch { showError("Translation failed."); }
+  }
+
+  function exportDoc(type) {
+    const content = `Caption: ${currentCaption}\n\nStory: ${storyText.textContent}`;
+    if (type === 'md') {
+      const blob = new Blob([content], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'story.md'; a.click();
+    } else {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text(content, 10, 10, { maxWidth: 180 });
+      doc.save('story.pdf');
+    }
+  }
+
+  function reset() {
+    currentFiles = [];
+    currentCaption = '';
+    captionText.textContent = '';
+    storyText.textContent = '';
+    uploadContainer.style.display = 'block';
+    previewContainer.style.display = 'none';
+    storyPreviewContainer.style.display = 'none';
+    resultArea.style.display = 'none';
+    if (eventSource) eventSource.close();
+  }
+
+  function setLoading(on) {
+    const btn = currentMode === 'single' ? document.getElementById('generate-btn') : document.getElementById('story-btn');
+    const loader = currentMode === 'single' ? document.getElementById('loader') : document.getElementById('story-loader');
+    btn.disabled = on;
+    loader.style.display = on ? 'block' : 'none';
+  }
+
+  function showError(m) { errorDisplay.textContent = m; errorDisplay.style.display = 'block'; }
+  function hideError() { errorDisplay.style.display = 'none'; }
+  function speakText() {
+    const t = storyText.textContent || captionText.textContent;
     window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate = 0.9; u.pitch = 1.1;
+    const u = new SpeechSynthesisUtterance(t);
     window.speechSynthesis.speak(u);
   }
-
-  function copyText(id, btn) {
-    navigator.clipboard.writeText(document.getElementById(id).textContent).then(() => {
-      const orig = btn.textContent;
-      btn.textContent = 'Copied!';
-      setTimeout(() => btn.textContent = orig, 2000);
-    });
+  function copyResult() {
+    const t = (captionText.textContent + "\n\n" + storyText.textContent).trim();
+    navigator.clipboard.writeText(t).then(() => alert("Copied!"));
   }
 </script>
-
 </body>
 </html>

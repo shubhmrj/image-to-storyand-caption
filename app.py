@@ -2,14 +2,18 @@ import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 import logging
-from flask import Flask, request, jsonify, render_template
+import json
+import time
+from flask import Flask, request, jsonify, render_template, Response, stream_with_context
 import torch
 from transformers import (
     BlipProcessor, BlipForConditionalGeneration,
-    GPT2LMHeadModel, GPT2Tokenizer
+    GPT2LMHeadModel, GPT2Tokenizer, TextIteratorStreamer
 )
 from PIL import Image
 import io
+from threading import Thread
+from deep_translator import GoogleTranslator
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -37,6 +41,13 @@ logger.info("GPT-2 ready on %s", DEVICE)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 
+MOOD_PROMPTS = {
+    "mysterious": "A mysterious and suspenseful story about:",
+    "whimsical": "A whimsical and magical story about:",
+    "professional": "A professional and formal narrative about:",
+    "creative": "A creative and engaging story about:"
+}
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -58,42 +69,23 @@ def get_caption(image):
             caption += '.'
     return caption
 
-def get_story(caption):
-    """Caption → Story using GPT-2"""
-    input_text = f"<|story|> {caption}."
-    input_ids  = gpt2_tokenizer.encode(input_text, return_tensors="pt").to(DEVICE)
-
-    with torch.no_grad():
-        output = gpt2_model.generate(
-            input_ids,
-            max_new_tokens     = 200,
-            temperature        = 0.85,
-            top_p              = 0.92,
-            do_sample          = True,
-            repetition_penalty = 1.3,
-            pad_token_id       = gpt2_tokenizer.eos_token_id,
-            eos_token_id       = gpt2_tokenizer.encode("<|endofstory|>")[0]
-        )
-
-    full_text = gpt2_tokenizer.decode(output[0], skip_special_tokens=False)
-    # Clean output using the tokens the model knows
-    # 1. Remove specific technical tokens
+def clean_story(full_text, caption, mood_prompt=""):
+    """Clean the generated story text"""
     for token in ["<|story|>", "<|endofstory|>", "<|pad|>", "<|endoftext|>"]:
         full_text = full_text.replace(token, "")
 
-    # 2. Extract story part and remove original prompts
     story = full_text.strip()
     
-    # Robust removal of input prompts (the caption)
-    prompts_to_remove = [caption]
-    for p in prompts_to_remove:
+    # Remove prompts
+    to_remove = [caption, mood_prompt, "A mysterious and suspenseful story about:", 
+                 "A whimsical and magical story about:", "A professional and formal narrative about:", 
+                 "A creative and engaging story about:"]
+    for p in to_remove:
         if p and p.lower() in story.lower():
-            # Use case-insensitive search but preserve original case for replacement if possible
-            start_idx = story.lower().find(p.lower())
-            if start_idx != -1:
-                story = story[:start_idx] + story[start_idx + len(p):]
+            idx = story.lower().find(p.lower())
+            if idx != -1:
+                story = story[:idx] + story[idx + len(p):]
 
-    # 3. Final cleanup of leading/trailing punctuation and whitespace
     story = story.strip()
     while story and story[0] in ".,!?;: ":
         story = story[1:].strip()
@@ -103,46 +95,78 @@ def get_story(caption):
         
     return story.capitalize()
 
-
 @app.route("/")
 def home():
     return render_template("index.html")
 
-
-# ── /caption  →  Single Photo tab (caption only) ─────────────
 @app.route("/caption", methods=["POST"])
 def caption():
     if "image" not in request.files:
-        return jsonify({"error": "No image part in the request"}), 400
+        return jsonify({"error": "No image part"}), 400
     file = request.files["image"]
     if file.filename == '' or not allowed_file(file.filename):
-        return jsonify({"error": "Invalid or missing image file"}), 400
+        return jsonify({"error": "Invalid image"}), 400
     try:
-        image   = Image.open(io.BytesIO(file.read())).convert("RGB")
-        cap     = get_caption(image)
+        image = Image.open(io.BytesIO(file.read())).convert("RGB")
+        cap = get_caption(image)
         return jsonify({"caption": cap})
     except Exception as e:
         logger.error("Caption error: %s", str(e))
-        return jsonify({"error": "Issue processing your image. Please try another."}), 500
+        return jsonify({"error": str(e)}), 500
 
+@app.route("/story-stream")
+def story_stream():
+    caption = request.args.get('caption', '')
+    mood = request.args.get('mood', 'creative')
+    continue_text = request.args.get('continue_text', '')
+    
+    mood_prompt = MOOD_PROMPTS.get(mood, MOOD_PROMPTS['creative'])
+    
+    if continue_text:
+        input_text = f"{continue_text} Then,"
+    else:
+        input_text = f"<|story|> {mood_prompt} {caption}."
 
-# ── /story  →  Story Mode tab (caption + story) ───────────────
-@app.route("/story", methods=["POST"])
-def story():
-    if "image" not in request.files:
-        return jsonify({"error": "No image part in the request"}), 400
-    file = request.files["image"]
-    if file.filename == '' or not allowed_file(file.filename):
-        return jsonify({"error": "Invalid or missing image file"}), 400
+    input_ids = gpt2_tokenizer.encode(input_text, return_tensors="pt").to(DEVICE)
+    streamer = TextIteratorStreamer(gpt2_tokenizer, skip_prompt=True, skip_special_tokens=True)
+
+    generation_kwargs = dict(
+        input_ids=input_ids,
+        streamer=streamer,
+        max_new_tokens=150,
+        temperature=0.85,
+        top_p=0.92,
+        do_sample=True,
+        repetition_penalty=1.3,
+        pad_token_id=gpt2_tokenizer.eos_token_id,
+        eos_token_id=gpt2_tokenizer.encode("<|endofstory|>")[0]
+    )
+
+    thread = Thread(target=gpt2_model.generate, kwargs=generation_kwargs)
+    thread.start()
+
+    def generate():
+        for new_text in streamer:
+            yield f"data: {json.dumps({'text': new_text})}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
+
+@app.route("/translate", methods=["POST"])
+def translate():
+    data = request.json
+    text = data.get('text', '')
+    target_lang = data.get('lang', 'en')
+    
+    if not text:
+        return jsonify({"error": "No text"}), 400
+        
     try:
-        image   = Image.open(io.BytesIO(file.read())).convert("RGB")
-        cap     = get_caption(image)
-        story   = get_story(cap)
-        return jsonify({"caption": cap, "story": story})
+        translated = GoogleTranslator(source='auto', target=target_lang).translate(text)
+        return jsonify({"translated": translated})
     except Exception as e:
-        logger.error("Story error: %s", str(e))
-        return jsonify({"error": "Issue generating story. Please try another image."}), 500
-
+        logger.error("Translation error: %s", str(e))
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
