@@ -2,7 +2,7 @@
 title: Image To Story
 emoji: 🖼️
 colorFrom: green
-colorTo: sage
+colorTo: blue
 sdk: docker
 app_port: 7860
 pinned: false
