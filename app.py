@@ -76,11 +76,32 @@ def get_story(caption):
         )
 
     full_text = gpt2_tokenizer.decode(output[0], skip_special_tokens=False)
-    if "<|story|>" in full_text:
-        full_text = full_text.split("<|story|>")[-1]
-    if "<|endofstory|>" in full_text:
-        full_text = full_text.split("<|endofstory|>")[0]
-    return full_text.strip().capitalize()
+    # Clean output using the tokens the model knows
+    # 1. Remove specific technical tokens
+    for token in ["<|story|>", "<|endofstory|>", "<|pad|>", "<|endoftext|>"]:
+        full_text = full_text.replace(token, "")
+
+    # 2. Extract story part and remove original prompts
+    story = full_text.strip()
+    
+    # Robust removal of input prompts (the caption)
+    prompts_to_remove = [caption]
+    for p in prompts_to_remove:
+        if p and p.lower() in story.lower():
+            # Use case-insensitive search but preserve original case for replacement if possible
+            start_idx = story.lower().find(p.lower())
+            if start_idx != -1:
+                story = story[:start_idx] + story[start_idx + len(p):]
+
+    # 3. Final cleanup of leading/trailing punctuation and whitespace
+    story = story.strip()
+    while story and story[0] in ".,!?;: ":
+        story = story[1:].strip()
+        
+    if not story:
+        return "The image inspired a quiet, thoughtful moment that words couldn't quite capture yet."
+        
+    return story.capitalize()
 
 
 @app.route("/")

@@ -209,6 +209,19 @@
     }
     .batch-item.done .status-overlay { opacity: 1; }
 
+    .batch-item.loading::after {
+      content: '\f110';
+      font-family: "Font Awesome 6 Free";
+      font-weight: 900;
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: spin 1s linear infinite;
+    }
+
     /* Loader */
     .loader {
       display: none;
@@ -243,8 +256,8 @@
 
   <!-- Mode Toggle -->
   <div class="mode-toggle">
-    <div class="mode-btn active" id="mode-single" onclick="setMode('single')">📷 Single Photo</div>
-    <div class="mode-btn"        id="mode-story"  onclick="setMode('story')">📖 Story Mode</div>
+    <div class="mode-btn active" id="mode-single" onclick="setMode('single')"><i class="fa-solid fa-camera"></i> Single Photo</div>
+    <div class="mode-btn"        id="mode-story"  onclick="setMode('story')"><i class="fa-solid fa-book-open"></i> Story Mode</div>
   </div>
 
   <div class="card">
@@ -253,9 +266,9 @@
     <div id="upload-container">
       <div class="upload-section" id="drop-zone">
         <input type="file" id="file-input" accept="image/*" />
-        <div class="icon-wrapper">🌿</div>
-        <p id="upload-text">Pick a photo or drag it here</p>
-        <span id="upload-hint">Supports JPG, PNG, and WEBP</span>
+        <div class="icon-wrapper"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+        <p id="upload-text">Select a photo or drag it here</p>
+        <span id="upload-hint">JPG, PNG, WEBP</span>
       </div>
     </div>
 
@@ -266,7 +279,7 @@
         <button class="btn btn-secondary" onclick="reset()">Choose another</button>
         <button class="btn btn-primary flex-center" id="generate-btn" onclick="generateCaption()">
           <div class="loader" id="loader"></div>
-          <span id="btn-text">Describe this for me</span>
+          <span id="btn-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Describe for me</span>
         </button>
       </div>
     </div>
@@ -288,8 +301,8 @@
     <!-- ── SINGLE PHOTO RESULT: caption only ────────────── -->
     <div id="result-area">
       <div class="action-btns">
-        <button class="action-btn" onclick="speakText(document.getElementById('caption-text').textContent)">🔊 Listen</button>
-        <button class="action-btn" onclick="copyText('caption-text', this)">Copy</button>
+        <button class="action-btn" onclick="speakText(document.getElementById('caption-text').textContent)"><i class="fa-solid fa-volume-high"></i> Listen</button>
+        <button class="action-btn" onclick="copyText('caption-text', this)"><i class="fa-solid fa-copy"></i> Copy</button>
       </div>
       <span class="result-label">I see...</span>
       <p id="caption-text"></p>
@@ -298,15 +311,15 @@
     <!-- ── STORY MODE RESULT: caption + story ───────────── -->
     <div id="story-result-area">
       <div class="story-block caption-block">
-        <span class="result-label">📝 Caption (BLIP)</span>
+        <span class="result-label"><i class="fa-solid fa-pen-nib"></i> Caption (BLIP)</span>
         <p id="story-caption-text"></p>
       </div>
       <div class="story-block generated-story-block">
         <div class="action-btns">
-          <button class="action-btn" onclick="speakText(document.getElementById('story-text').textContent)">🔊 Listen</button>
-          <button class="action-btn" onclick="copyText('story-text', this)">Copy</button>
+          <button class="action-btn" onclick="speakText(document.getElementById('story-text').textContent)"><i class="fa-solid fa-volume-high"></i> Listen</button>
+          <button class="action-btn" onclick="copyText('story-text', this)"><i class="fa-solid fa-copy"></i> Copy</button>
         </div>
-        <span class="result-label">✨ Story (GPT-2)</span>
+        <span class="result-label"><i class="fa-solid fa-wand-magic-sparkles"></i> Story (GPT-2)</span>
         <p id="story-text"></p>
       </div>
     </div>
@@ -370,7 +383,7 @@
         grid.innerHTML = `
           <div class="batch-item" id="batch-item-0">
             <img src="${e.target.result}" />
-            <div class="status-overlay">✨</div>
+            <div class="status-overlay"><i class="fa-solid fa-check"></i></div>
           </div>`;
         document.getElementById('story-preview-container').style.display = 'block';
       }
