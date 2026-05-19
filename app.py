@@ -2,6 +2,7 @@ import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 import json
+import logging
 from flask import Flask, request, jsonify, render_template, Response, stream_with_context
 import torch
 from transformers import (
@@ -13,6 +14,8 @@ import io
 from threading import Thread
 from deep_translator import GoogleTranslator
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__, template_folder='Templates')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
