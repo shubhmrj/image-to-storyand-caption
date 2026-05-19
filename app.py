@@ -21,30 +21,20 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__, template_folder='Templates')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-BLIP_MODEL_ID = "shubmrj/blip-coco-finetuned"
-GPT2_MODEL_ID = "shubmrj/gpt2-rocstories-finetuned"
+BLIP_MODEL_ID = "Salesforce/blip-image-captioning-base"
+GPT2_MODEL_ID = "gpt2"
 DEVICE        = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ── Load BLIP ─────────────────────────────────────────────────
 logger.info("Loading BLIP from %s...", BLIP_MODEL_ID)
-# Load processor from the SAME fine-tuned repo if possible, fallback to base
-try:
-    blip_processor = BlipProcessor.from_pretrained(BLIP_MODEL_ID)
-except:
-    blip_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
-
-blip_model = BlipForConditionalGeneration.from_pretrained(BLIP_MODEL_ID).to(DEVICE)
+blip_processor = BlipProcessor.from_pretrained(BLIP_MODEL_ID)
+blip_model     = BlipForConditionalGeneration.from_pretrained(BLIP_MODEL_ID).to(DEVICE)
 blip_model.eval()
 logger.info("BLIP ready on %s", DEVICE)
 
 # ── Load GPT-2 ────────────────────────────────────────────────
 logger.info("Loading GPT-2 from %s...", GPT2_MODEL_ID)
-# Load tokenizer from the SAME fine-tuned repo to ensure special tokens are matched
-try:
-    gpt2_tokenizer = GPT2Tokenizer.from_pretrained(GPT2_MODEL_ID)
-except:
-    gpt2_tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-
+gpt2_tokenizer = GPT2Tokenizer.from_pretrained(GPT2_MODEL_ID)
 # Ensure tokenizer has a padding token
 if gpt2_tokenizer.pad_token is None:
     gpt2_tokenizer.pad_token = gpt2_tokenizer.eos_token
@@ -142,18 +132,7 @@ def story_stream():
         input_text = f"<|story|> {mood_prompt} {caption}."
 
     input_ids = gpt2_tokenizer.encode(input_text, return_tensors="pt").to(DEVICE)
-    # Use the gpt2_tokenizer associated with the streamer to avoid sequence item errors
     streamer = TextIteratorStreamer(gpt2_tokenizer, skip_prompt=True, skip_special_tokens=True)
-
-    # Use the model's own config to find the correct EOS token if possible
-    eos_token_id = gpt2_tokenizer.eos_token_id
-    try:
-        # Check if the fine-tuned model has a specific end token
-        special_token = gpt2_tokenizer.encode("<|endofstory|>")
-        if special_token:
-            eos_token_id = special_token[0]
-    except:
-        pass
 
     generation_kwargs = dict(
         input_ids=input_ids,
@@ -164,7 +143,7 @@ def story_stream():
         do_sample=True,
         repetition_penalty=1.3,
         pad_token_id=gpt2_tokenizer.pad_token_id,
-        eos_token_id=eos_token_id
+        eos_token_id=gpt2_tokenizer.eos_token_id
     )
 
     thread = Thread(target=gpt2_model.generate, kwargs=generation_kwargs)
