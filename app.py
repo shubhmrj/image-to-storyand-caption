@@ -23,14 +23,14 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 BLIP_MODEL_ID = "Salesforce/blip-image-captioning-base"
 GPT2_MODEL_ID = "gpt2"
 
-# ── Load BLIP ─────────────────────────────────────────────────
+# Load BLIP
 logger.info("Loading BLIP from %s...", BLIP_MODEL_ID)
 blip_processor = BlipProcessor.from_pretrained(BLIP_MODEL_ID)
 blip_model     = BlipForConditionalGeneration.from_pretrained(BLIP_MODEL_ID)
 blip_model.eval()
 logger.info("BLIP ready")
 
-# ── Load GPT-2 ────────────────────────────────────────────────
+#  Load GPT-2 
 logger.info("Loading GPT-2 from %s...", GPT2_MODEL_ID)
 gpt2_tokenizer = GPT2Tokenizer.from_pretrained(GPT2_MODEL_ID)
 if gpt2_tokenizer.pad_token is None:
